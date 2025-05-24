@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sarcopenia Risk Assessment</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #8e44ad, #c084f5);
+            color: #fff;
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 1.5s ease-in-out;
+        }
+        .container {
+            max-width: 700px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+            color: #333;
+            animation: slideIn 1s ease-in-out;
+        }
+        .question-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s, background 0.3s;
+        }
+        .question-card:hover {
+            transform: scale(1.05);
+            background: #ececec;
+        }
+        .btn-group {
+            display: grid;
+            grid-template-columns: repeat(11, 1fr);
+            gap: 5px;
+        }
+        .btn-group .btn {
+            flex: none;
+            width: 50px;
+            height: 50px;
+            padding: 0;
+            font-size: 16px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        .btn.selected {
+            background-color: #9b59b6 !important;
+            color: white !important;
+            transform: scale(1.2);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .result-box {
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 22px;
+            font-weight: bold;
+            margin-top: 20px;
+            opacity: 0;
+            animation: fadeIn 1s ease-in-out forwards;
+            text-align: center;
+            transition: all 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container text-center">
+        <h2 class="mb-4">Sarcopenia Risk Assessment</h2>
+        <div id="questions"></div>
+        <button class="btn btn-primary mt-4 w-100" onclick="calculateRisk()">Check Risk</button>
+        <div id="result" class="result-box mt-3"></div>
+    </div>
+
+    <script>
+        const questions = [
+            "Difficulty in lifting 5 kg (e.g., grocery bag)?",
+            "Difficulty in walking across a room without assistance?",
+            "Difficulty rising from a chair without using arms?",
+            "Difficulty climbing a flight of 10 stairs?",
+            "Have you fallen 4 or more times in the past year?"
+        ];
+        
+        let scores = Array(5).fill(0);
+        
+        function renderQuestions() {
+            let questionContainer = document.getElementById("questions");
+            questionContainer.innerHTML = "";
+            
+            questions.forEach((q, index) => {
+                let buttons = "";
+                for (let i = 0; i <= 10; i++) {
+                    buttons += `<button class='btn btn-outline-primary' onclick='setScore(${index}, ${i}, this)'>${i}</button>`;
+                }
+                
+                questionContainer.innerHTML += `
+                    <div class="question-card">
+                        <p class="mb-2">${q}</p>
+                        <div class="btn-group" id="btn-group-${index}">
+                            ${buttons}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function setScore(index, score, element) {
+            scores[index] = score;
+            let btnGroup = document.getElementById(`btn-group-${index}`).children;
+            for (let btn of btnGroup) {
+                btn.classList.remove("selected");
+            }
+            element.classList.add("selected");
+        }
+
+        function calculateRisk() {
+    let totalScore = scores.reduce((a, b) => a + b, 0);
+    let userId = localStorage.getItem("userId") || 1; // Get user ID dynamically
+
+    fetch("http://localhost:8080/api/saveScore", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: userId, score: totalScore })
+    })
+    .then(response => response.json())
+    .then(data => alert("Score saved successfully!"))
+    .catch(error => {
+        alert("Error saving score. Please try again.");
+        console.error("Error:", error);
+    });
+
+    let resultBox = document.getElementById("result");
+    let resultText = `Total SARC-F Score: ${totalScore}/50 <br>`;
+
+    if (totalScore >= 40) {
+        resultBox.style.backgroundColor = "#e74c3c";
+        resultText += "Severe risk of sarcopenia. Please consult a doctor immediately.";
+    } else if (totalScore >= 30) {
+        resultBox.style.backgroundColor = "#f39c12";
+        resultText += "High risk of sarcopenia. Consider seeking medical advice.";
+    } else if (totalScore >= 20) {
+        resultBox.style.backgroundColor = "#f1c40f";
+        resultText += "Medium risk of sarcopenia. Lifestyle changes may be necessary.";
+    } else if (totalScore >= 10) {
+        resultBox.style.backgroundColor = "#3498db";
+        resultText += "Low risk of sarcopenia. Maintain a healthy lifestyle.";
+    } else {
+        resultBox.style.backgroundColor = "#2ecc71";
+        resultText += "No risk of sarcopenia. Keep up the good work!";
+    }
+
+    resultBox.style.color = "white";
+    resultBox.innerHTML = resultText;
+}
+
+
+        renderQuestions();
+        
+    </script>
+</body>
+</html>

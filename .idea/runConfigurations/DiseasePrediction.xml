@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="DiseasePrediction" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="org.disease.Main" />
+    <module name="Disease_prediction" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
